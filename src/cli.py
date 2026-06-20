@@ -1,10 +1,4 @@
-"""
-Expense Tracker CLI
-Usage:
-  python tracker.py add "Coffee" 4.50 Food
-  python tracker.py list
-  python tracker.py summary
-"""
+"""Entry point for all CLI commands: add, list, and summary."""
 
 import argparse
 from datetime import date
