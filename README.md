@@ -1,6 +1,6 @@
 # Expense Tracker
 
-A lightweight command-line expense tracker with no external dependencies. Records are stored locally in a JSON file.
+A lightweight command-line tool for recording and reviewing personal expenses. All data is stored locally in a single JSON file — no database, no dependencies beyond Python.
 
 ---
 
@@ -11,21 +11,12 @@ A lightweight command-line expense tracker with no external dependencies. Record
 
 ---
 
-## Running Tests
-
-```bash
-pip install pytest
-pytest tests/ -v
-```
-
-All tests use real file I/O via pytest's `tmp_path` — no mocks.
-
----
-
 ## Quick Start
 
 ```bash
-python tracker.py add "Coffee" 4.50 Food
+python tracker.py add "Morning coffee" 4.50 Food
+python tracker.py add "Bus pass" 40 Transport
+python tracker.py add "Netflix" 15.99 Entertainment
 python tracker.py list
 python tracker.py summary
 ```
@@ -40,21 +31,17 @@ python tracker.py summary
 python tracker.py add "<description>" <amount> <category>
 ```
 
-| Argument | Type | Description |
+| Argument | Type | Notes |
 |---|---|---|
 | `description` | string | What you spent money on. Quote it if it contains spaces. |
-| `amount` | float | Amount spent. Must be greater than zero. |
+| `amount` | float | Must be greater than zero. |
 | `category` | string | Free-text label (e.g. `Food`, `Transport`, `Entertainment`). |
 
-**Examples**
+**Example**
 
 ```bash
 python tracker.py add "Morning coffee" 4.50 Food
-python tracker.py add "Bus pass" 40 Transport
-python tracker.py add "Netflix" 15.99 Entertainment
 ```
-
-**Output**
 
 ```
 Added: Morning coffee — $4.50 [Food]
@@ -70,7 +57,7 @@ python tracker.py list [--category <name>]
 
 | Flag | Description |
 |---|---|
-| `--category`, `-c` | Filter results to a single category (case-insensitive). |
+| `--category`, `-c` | Filter to a single category (case-insensitive). |
 
 **Examples**
 
@@ -83,14 +70,16 @@ python tracker.py list -c transport
 **Output**
 
 ```
-#     Date          Category            Amount  Description
+#     Date          Category          Amount   Description
 ─────────────────────────────────────────────────────────────────
-1     2026-06-20    Food              $   4.50  Morning coffee
-2     2026-06-20    Transport         $  40.00  Bus pass
-3     2026-06-20    Entertainment     $  15.99  Netflix
+1     2026-06-20    Food               $  4.50  Morning coffee
+2     2026-06-20    Transport          $ 40.00  Bus pass
+3     2026-06-20    Entertainment      $ 15.99  Netflix
 ─────────────────────────────────────────────────────────────────
-                                        $  60.49  Total
+                                       $ 60.49  Total
 ```
+
+The `--category` filter matches case-insensitively (`food`, `Food`, and `FOOD` all match), but the stored casing is displayed as-is.
 
 ---
 
@@ -100,12 +89,12 @@ python tracker.py list -c transport
 python tracker.py summary
 ```
 
-Groups all expenses by category and prints a sorted breakdown with a grand total.
+Groups all expenses by category, sorted alphabetically, with a grand total.
 
 **Output**
 
 ```
-Category                   Total
+Category              Total
 ─────────────────────────────────
 Entertainment         $    15.99
 Food                  $     4.50
@@ -114,41 +103,13 @@ Transport             $    40.00
 TOTAL                 $    60.49
 ```
 
----
-
-## Project Structure
-
-```
-expense-tracker/
-├── src/
-│   ├── models.py       # Expense TypedDict (data shape)
-│   ├── storage.py      # load_expenses / save_expenses
-│   └── cli.py          # command handlers and argument parsing
-├── tests/
-│   ├── test_cli.py     # tests for cmd_add, cmd_list, cmd_summary
-│   └── test_storage.py # tests for load_expenses, save_expenses
-├── data/
-│   └── expenses.json   # auto-created on first add; not committed to source control
-├── conftest.py         # adds src/ to sys.path for pytest
-├── tracker.py          # entry point — adds src/ to path, delegates to cli.main
-├── README.md
-└── CLAUDE.md
-```
-
-### Module responsibilities
-
-| File | Responsibility |
-|---|---|
-| `src/models.py` | Defines the `Expense` TypedDict: `date`, `description`, `amount`, `category`. |
-| `src/storage.py` | `load_expenses()` and `save_expenses()` — full list read/write on every call. |
-| `src/cli.py` | `cmd_add`, `cmd_list`, `cmd_summary`, and `main` — all user-facing logic. |
-| `tracker.py` | Adds `src/` to `sys.path`, imports `main` from `cli`, and runs it. |
+Note: category grouping is case-sensitive. `Food` and `food` appear as separate buckets.
 
 ---
 
 ## Data Storage
 
-Expenses are persisted in `data/expenses.json`. The file and directory are created automatically on the first `add`.
+Expenses are written to `data/expenses.json`. The file and directory are created automatically on the first `add`.
 
 ```json
 [
@@ -157,19 +118,69 @@ Expenses are persisted in `data/expenses.json`. The file and directory are creat
 ]
 ```
 
-**Notes**
-
-- Amounts are stored as floats, rounded to 2 decimal places.
-- Categories are free-text with no validation. `Food` and `food` are treated as separate categories by `summary` (exact match), but `list --category` filtering is case-insensitive.
-- The entire file is rewritten on every `add`. There is no partial update.
+The entire file is rewritten on every `add`. There is no partial update. The file is not committed to source control.
 
 ---
 
-## Windows Note
+## Running Tests
 
-The table separators use the Unicode box-drawing character `─` (U+2500). If your terminal shows encoding errors, set `PYTHONUTF8=1`:
+```bash
+pip install pytest
+pytest tests/ -v
+```
+
+`conftest.py` adds `src/` to `sys.path`. Tests use `monkeypatch` and `tmp_path` for real file I/O — no mocks.
+
+---
+
+## Project Structure
+
+```
+expense-tracker/
+├── src/
+│   ├── models.py       # Expense TypedDict (date, description, amount, category)
+│   ├── storage.py      # load_expenses / save_expenses
+│   └── cli.py          # cmd_add, cmd_list, cmd_summary, main
+├── tests/
+│   ├── test_cli.py
+│   └── test_storage.py
+├── data/
+│   └── expenses.json   # auto-created on first add; not committed
+├── conftest.py         # adds src/ to sys.path for pytest
+├── tracker.py          # entry point
+├── README.md
+└── CLAUDE.md
+```
+
+---
+
+## Troubleshooting
+
+**`ModuleNotFoundError: No module named 'storage'`**
+Run the tracker via `tracker.py`, not directly via `src/cli.py`. Only `tracker.py` adds `src/` to `sys.path`.
+
+```bash
+# correct
+python tracker.py list
+
+# incorrect — will fail
+python src/cli.py list
+```
+
+**Table separators show as `?` or boxes**
+The table uses the Unicode box-drawing character `─` (U+2500). If your terminal displays garbage characters, set `PYTHONUTF8=1`:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
 python tracker.py list
+```
+
+**`No expenses recorded yet`**
+No `add` commands have been run yet, or `data/expenses.json` was deleted. Run an `add` to create the file and start tracking.
+
+**Amount rejected**
+`add` rejects amounts of zero or below. Pass a positive number:
+
+```bash
+python tracker.py add "Lunch" 12.50 Food
 ```
