@@ -156,6 +156,53 @@ expense-tracker/
 
 ---
 
+## Claude Code
+
+This project ships with Claude Code configuration under `.claude/` — hooks, subagents, and skills that automate quality checks and common workflows.
+
+### Hooks
+
+Hooks run automatically in response to Claude's actions. No manual invocation needed.
+
+| Event | Hook file | What it does |
+|---|---|---|
+| After any `Edit` tool call | `.claude/hooks/post-edit.ps1` / `post-edit.sh` | Runs `python -m py_compile` on the edited file. If the file has a syntax error, Claude is notified immediately so it can fix the file before continuing. |
+
+The hook only fires on `.py` files — edits to JSON, Markdown, or other files pass through silently.
+
+### Subagents
+
+Subagents are scoped Claude instances with restricted tools and a focused system prompt. Claude spawns them automatically when the task matches their description.
+
+| Agent | File | Tools | When it's used |
+|---|---|---|---|
+| `code-reviewer` | `.claude/agents/code-reviewer.md` | `read`, `grep`, `glob` | Reviews Python changes against project conventions: docstrings on every function, `snake_case` names, no global variables, positive-float validation on amounts. Reports `file:line` for each issue. Cannot edit files. |
+| `doc-writer` | `.claude/agents/doc-writer.md` | (all) | Writes README files, function docs, and usage guides. Specialises in beginner-friendly language, real example output, and troubleshooting sections. |
+
+### Skills
+
+Skills are slash commands you can invoke directly in the Claude Code prompt.
+
+| Skill | Invoke with | What it does |
+|---|---|---|
+| `run-tests` | `/run-tests` | Runs `pytest tests/ -v`, summarises pass/fail counts, and explains each failure in plain English with a suggested fix. |
+| `tag-release` | `/tag-release` | Runs the test suite, bumps the version in `README.md`, then shows (but does not run) the proposed `git tag` command for your confirmation. |
+| `style-check` | Internal only (`user-invocable: false`) | Checks every Python file for missing docstrings, non-`snake_case` names, wrong message formats, global variables, and unvalidated amounts. Used by Claude during reviews. |
+
+### Permissions
+
+`.claude/settings.json` pre-approves a set of read-only and safe commands so Claude can run them without prompting:
+
+```
+git log / status / diff / tag / remote
+pytest tests/ -v
+python tracker.py *
+```
+
+Any command not on this list will pause and ask for your approval before running.
+
+---
+
 ## Troubleshooting
 
 **`ModuleNotFoundError: No module named 'storage'`**
