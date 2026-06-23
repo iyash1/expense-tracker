@@ -19,7 +19,7 @@ def cmd_add(description: str, amount: float, category: str) -> None:
         "category": category,
     })
     save_expenses(expenses)
-    print(f"Added: {description} — ${amount:.2f} [{category}]")
+    print(f"[Added] {description} (${amount:.2f})")
 
 
 def cmd_list(category: str | None = None) -> None:

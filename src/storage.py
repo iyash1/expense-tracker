@@ -1,3 +1,11 @@
+"""
+Persistence layer for expense records.
+
+Reads and writes the full expenses list to ``data/expenses.json`` on every
+operation — no partial updates. ``DATA_FILE`` can be monkey-patched in tests
+to redirect I/O to a temporary path without touching the real data file.
+"""
+
 import json
 from pathlib import Path
 
