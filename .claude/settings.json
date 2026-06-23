@@ -1,0 +1,32 @@
+{
+  "model": "claude-sonnet-4-6",
+  "permissions": {
+    "allow": [
+      "Bash(git log *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git tag *)",
+      "Bash(git remote *)",
+      "Bash(pytest tests/ -v)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python tracker.py *)",
+      "PowerShell(pytest tests/ -v)",
+      "PowerShell(git log *)",
+      "PowerShell(git status)",
+      "PowerShell(git diff *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -File .claude/hooks/post-edit.ps1"
+          }
+        ]
+      }
+    ]
+  }
+}

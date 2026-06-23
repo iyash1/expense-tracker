@@ -1,5 +1,7 @@
 # Expense Tracker
 
+**Version: 1.0.0**
+
 A lightweight command-line tool for recording and reviewing personal expenses. All data is stored locally in a single JSON file — no database, no dependencies beyond Python.
 
 ---

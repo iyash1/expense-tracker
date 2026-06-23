@@ -1,6 +1,7 @@
 ---
 name: style-check
 description: Review code for style issues specific to this project's conventions
+user-invocable: false
 ---
 
 # Style review checklist for expense-tracker
