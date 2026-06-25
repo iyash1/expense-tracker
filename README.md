@@ -46,7 +46,7 @@ python tracker.py add "Morning coffee" 4.50 Food
 ```
 
 ```
-Added: Morning coffee — $4.50 [Food]
+[Added] Morning coffee ($4.50) [Food]
 ```
 
 ---

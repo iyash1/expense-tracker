@@ -174,3 +174,134 @@ def test_summary_categories_sorted_alphabetically(capsys):
     cli.cmd_summary()
     out = capsys.readouterr().out
     assert out.index("Food") < out.index("Transport")
+
+
+def test_summary_single_category(capsys):
+    """Summary with one category prints that category and a matching grand total."""
+    storage.save_expenses([
+        {"date": "2026-06-20", "description": "Coffee", "amount": 4.50, "category": "Food"},
+    ])
+    cli.cmd_summary()
+    out = capsys.readouterr().out
+    assert "Food" in out
+    assert "4.50" in out
+
+
+def test_summary_rounding_accumulation(capsys):
+    """Floating-point amounts accumulate without spurious precision errors."""
+    # 0.10 * 3 in naive float arithmetic can produce 0.30000000000000004
+    storage.save_expenses([
+        {"date": "2026-06-20", "description": "A", "amount": 0.10, "category": "Misc"},
+        {"date": "2026-06-20", "description": "B", "amount": 0.10, "category": "Misc"},
+        {"date": "2026-06-20", "description": "C", "amount": 0.10, "category": "Misc"},
+    ])
+    cli.cmd_summary()
+    out = capsys.readouterr().out
+    assert "0.30" in out
+
+
+# ---------------------------------------------------------------------------
+# cmd_list — additional edge cases
+# ---------------------------------------------------------------------------
+
+def test_list_single_expense_shows_amount(capsys):
+    """A single expense renders with its amount and the total matches."""
+    storage.save_expenses([
+        {"date": "2026-06-20", "description": "Coffee", "amount": 4.50, "category": "Food"},
+    ])
+    cli.cmd_list()
+    out = capsys.readouterr().out
+    assert "4.50" in out
+
+
+def test_list_filter_shows_filtered_total_only(capsys):
+    """The totals row reflects only the filtered subset, not the full dataset."""
+    storage.save_expenses(SAMPLE)
+    cli.cmd_list(category="Food")
+    out = capsys.readouterr().out
+    # Food total: 4.50 + 12.75 = 17.25; full total 57.25 must not appear
+    assert "17.25" in out
+    assert "57.25" not in out
+
+
+def test_list_shows_date_and_category_columns(capsys):
+    """Each expense row includes its date and category."""
+    storage.save_expenses([
+        {"date": "2026-06-20", "description": "Coffee", "amount": 4.50, "category": "Food"},
+    ])
+    cli.cmd_list()
+    out = capsys.readouterr().out
+    assert "2026-06-20" in out
+    assert "Food" in out
+
+
+def test_list_shows_row_numbers(capsys):
+    """Rows are numbered starting at 1."""
+    storage.save_expenses(SAMPLE)
+    cli.cmd_list()
+    out = capsys.readouterr().out
+    # First column is the row index; '1' appears as a row number
+    assert "1" in out
+
+
+# ---------------------------------------------------------------------------
+# cmd_add — additional edge cases
+# ---------------------------------------------------------------------------
+
+def test_add_description_with_spaces():
+    """Descriptions containing spaces are stored and retrieved correctly."""
+    cli.cmd_add("Morning coffee", 3.00, "Food")
+    saved = storage.load_expenses()
+    assert saved[0]["description"] == "Morning coffee"
+
+
+def test_add_large_amount():
+    """Large amounts are stored with two decimal places without truncation."""
+    cli.cmd_add("Rent", 1500.00, "Housing")
+    saved = storage.load_expenses()
+    assert saved[0]["amount"] == 1500.00
+
+
+def test_add_confirmation_format(capsys):
+    """Confirmation line starts with '[Added]' and includes the category in brackets."""
+    cli.cmd_add("Coffee", 4.50, "Food")
+    out = capsys.readouterr().out
+    assert out.startswith("[Added]")
+    assert "[Food]" in out
+
+
+# ---------------------------------------------------------------------------
+# main — argparse dispatch
+# ---------------------------------------------------------------------------
+
+def test_main_dispatches_add(monkeypatch, capsys):
+    """main() with 'add' args calls cmd_add and produces output."""
+    monkeypatch.setattr("sys.argv", ["tracker.py", "add", "Coffee", "4.50", "Food"])
+    cli.main()
+    out = capsys.readouterr().out
+    assert "Added" in out
+    assert "Coffee" in out
+
+
+def test_main_dispatches_list(monkeypatch, capsys):
+    """main() with 'list' args calls cmd_list; empty store prints the empty message."""
+    monkeypatch.setattr("sys.argv", ["tracker.py", "list"])
+    cli.main()
+    assert "No expenses" in capsys.readouterr().out
+
+
+def test_main_dispatches_summary(monkeypatch, capsys):
+    """main() with 'summary' args calls cmd_summary; empty store prints the empty message."""
+    monkeypatch.setattr("sys.argv", ["tracker.py", "summary"])
+    cli.main()
+    assert "No expenses" in capsys.readouterr().out
+
+
+def test_main_list_category_flag(monkeypatch, capsys):
+    """main() passes --category to cmd_list, filtering the output correctly."""
+    storage.save_expenses(SAMPLE)
+    monkeypatch.setattr("sys.argv", ["tracker.py", "list", "--category", "Food"])
+    cli.main()
+    out = capsys.readouterr().out
+    assert "Coffee" in out
+    assert "Bus pass" not in out
