@@ -70,3 +70,42 @@ def test_save_writes_valid_json(tmp_path, monkeypatch):
     parsed = json.loads(data_file.read_text())
     assert isinstance(parsed, list)
     assert parsed[0]["amount"] == 4.50
+
+
+def test_save_empty_list_produces_valid_file(tmp_path, monkeypatch):
+    """save_expenses([]) writes a valid empty-array JSON file."""
+    data_file = tmp_path / "expenses.json"
+    monkeypatch.setattr(storage, "DATA_FILE", data_file)
+    storage.save_expenses([])
+    assert data_file.exists()
+    assert json.loads(data_file.read_text()) == []
+
+
+def test_save_uses_indented_json(tmp_path, monkeypatch):
+    """Output file uses indentation (indent=2) so it's human-readable."""
+    data_file = tmp_path / "expenses.json"
+    monkeypatch.setattr(storage, "DATA_FILE", data_file)
+    storage.save_expenses([{"date": "2026-06-20", "description": "Coffee", "amount": 4.50, "category": "Food"}])
+    raw = data_file.read_text()
+    # indent=2 means the second line starts with two spaces
+    assert "\n  " in raw
+
+
+def test_load_raises_on_corrupt_json(tmp_path, monkeypatch):
+    """load_expenses raises json.JSONDecodeError when the file contains invalid JSON."""
+    data_file = tmp_path / "expenses.json"
+    data_file.write_text("not valid json {{")
+    monkeypatch.setattr(storage, "DATA_FILE", data_file)
+    with pytest.raises(json.JSONDecodeError):
+        storage.load_expenses()
+
+
+def test_save_preserves_field_order_in_roundtrip():
+    """All four Expense fields survive a save/load roundtrip with correct values."""
+    expense = {"date": "2026-01-15", "description": "Taxi", "amount": 22.50, "category": "Transport"}
+    storage.save_expenses([expense])
+    loaded = storage.load_expenses()
+    assert loaded[0]["date"] == "2026-01-15"
+    assert loaded[0]["description"] == "Taxi"
+    assert loaded[0]["amount"] == 22.50
+    assert loaded[0]["category"] == "Transport"

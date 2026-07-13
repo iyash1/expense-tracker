@@ -47,6 +47,13 @@ expense-tracker/
 - **`src/cli.py`**: `cmd_add`, `cmd_list`, `cmd_summary`, and `main` — all command logic and argument parsing.
 - **`tracker.py`**: Inserts `src/` into `sys.path` then calls `cli.main`. This is the only entry point.
 
+## Hooks
+
+Configured in `.claude/settings.json` (`.ps1` for Windows, `.sh` for macOS/Linux):
+
+- **`post-edit`** (`PostToolUse` / `Edit`): byte-compiles edited `.py` files to catch syntax errors immediately.
+- **`guard-push`** (`PreToolUse` / `Bash`): blocks `git push` to `main` (named explicitly, or when it's the current branch) by returning a `permissionDecision: deny`. Push from a feature branch instead.
+
 ## Data format
 
 ```json
@@ -63,3 +70,4 @@ Categories are free-text — no validation or enum. The summary command groups b
 - Keep all user-facing messages in a consistent format: "[ACTION] description (amount)"
 - Never use global variables — pass data through function parameters
 - Python version: 3.10+
+- In case of error creating a worktree under `.claude/worktrees/`, you can run use `git worktree add .claude/worktrees/<name> <branch>` to create a worktree manually.
