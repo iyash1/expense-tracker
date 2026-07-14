@@ -139,6 +139,16 @@ pytest tests/ -v
 
 ```
 expense-tracker/
+├── .claude/
+│   ├── agents/         # 5 subagents (code-reviewer, doc-writer, docstring-auditor, ...)
+│   ├── hooks/          # post-edit + guard-push (.ps1 for Windows, .sh for macOS/Linux)
+│   ├── skills/         # run-tests, style-check, tag-release
+│   └── settings.json   # model, permissions, hook + worktree config
+├── .github/
+│   └── workflows/
+│       └── claude-review.yml   # runs a Claude Code review on every PR to main
+├── documentation/
+│   └── playbook/       # "The Claude Code Playbook for Developers" (chapters 01–08)
 ├── src/
 │   ├── models.py       # Expense TypedDict (date, description, amount, category)
 │   ├── storage.py      # load_expenses / save_expenses
@@ -148,6 +158,7 @@ expense-tracker/
 │   └── test_storage.py
 ├── data/
 │   └── expenses.json   # auto-created on first add; not committed
+├── .gitignore
 ├── conftest.py         # adds src/ to sys.path for pytest
 ├── tracker.py          # entry point
 ├── README.md
@@ -167,8 +178,9 @@ Hooks run automatically in response to Claude's actions. No manual invocation ne
 | Event | Hook file | What it does |
 |---|---|---|
 | After any `Edit` tool call | `.claude/hooks/post-edit.ps1` / `post-edit.sh` | Runs `python -m py_compile` on the edited file. If the file has a syntax error, Claude is notified immediately so it can fix the file before continuing. |
+| Before any `Bash` command | `.claude/hooks/guard-push.ps1` / `guard-push.sh` | Inspects the command; if it's a `git push` to `main` (named explicitly, or because `main` is the current branch), it returns a deny decision and the push is blocked. Push from a feature branch instead. |
 
-The hook only fires on `.py` files — edits to JSON, Markdown, or other files pass through silently.
+The `post-edit` hook only fires on `.py` files — edits to JSON, Markdown, or other files pass through silently. The `guard-push` hook ignores every Bash command except a `git push` aimed at `main`.
 
 ### Subagents
 
@@ -178,6 +190,11 @@ Subagents are scoped Claude instances with restricted tools and a focused system
 |---|---|---|---|
 | `code-reviewer` | `.claude/agents/code-reviewer.md` | `read`, `grep`, `glob` | Reviews Python changes against project conventions: docstrings on every function, `snake_case` names, no global variables, positive-float validation on amounts. Reports `file:line` for each issue. Cannot edit files. |
 | `doc-writer` | `.claude/agents/doc-writer.md` | (all) | Writes README files, function docs, and usage guides. Specialises in beginner-friendly language, real example output, and troubleshooting sections. |
+| `docstring-auditor` | `.claude/agents/docstring-auditor.md` | `Read`, `Grep`, `Glob`, `Edit` | Adds any missing one-line docstrings to functions in `src/` without changing behavior. |
+| `readme-refresher` | `.claude/agents/readme-refresher.md` | `Read`, `Grep`, `Glob`, `Edit` | Keeps `README.md` accurate against `src/cli.py` — verifies every command and flag before documenting it. |
+| `test-author` | `.claude/agents/test-author.md` | `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash` | Adds and expands pytest tests under `tests/`, then runs the suite to confirm they pass. |
+
+The last three declare `isolation: worktree` — each runs in its own temporary git worktree scoped to a different path (`src/`, `README.md`, `tests/`), so you can launch all three at once without them touching your working copy or each other's work.
 
 ### Skills
 
@@ -195,11 +212,25 @@ Skills are slash commands you can invoke directly in the Claude Code prompt.
 
 ```
 git log / status / diff / tag / remote
-pytest tests/ -v
+pytest tests/ -v   (and: python -m pytest tests/ -v)
 python tracker.py *
 ```
 
+`git log` / `status` / `diff` and `pytest tests/ -v` are pre-approved in their PowerShell form too.
+
 Any command not on this list will pause and ask for your approval before running.
+
+---
+
+## Documentation & further reading
+
+This repo is the companion project for a two-part hands-on series:
+
+- **Part 1 — [Claude, Meet Code: A Hands-On Introduction to Claude Code](https://medium.com/@yasheturi/claude-meet-code-a-hands-on-introduction-to-claude-code-02b05be331b3)** — builds this expense tracker from scratch and introduces `CLAUDE.md`, skills, subagents, and hooks.
+- **Part 2 — *Claude, Level Up: Going Deeper with Claude Code*** — the advanced follow-up: subagent controls, skill invocation rules, blocking hooks, user-level setup, and worktrees. *(Published separately.)*
+- **[The Claude Code Playbook for Developers](documentation/playbook/README.md)** — a stack-general onboarding guide (chapters 01–08) for shipping production-ready code with Claude Code.
+
+Everything the two articles reference — agents, skills, hooks, settings, the CI workflow — lives in this repo under `.claude/` and `.github/`, so you can read along with the real files.
 
 ---
 

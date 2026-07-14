@@ -25,6 +25,10 @@ No dependencies beyond the Python standard library. No install step needed.
 
 ```
 expense-tracker/
+├── .claude/            # Claude Code config: agents/, hooks/, skills/, settings.json
+├── .github/workflows/  # claude-review.yml — Claude review on every PR to main
+├── documentation/
+│   └── playbook/       # "The Claude Code Playbook for Developers" (chapters 01–08)
 ├── src/
 │   ├── models.py       # Expense TypedDict
 │   ├── storage.py      # load_expenses / save_expenses
@@ -53,6 +57,14 @@ Configured in `.claude/settings.json` (`.ps1` for Windows, `.sh` for macOS/Linux
 
 - **`post-edit`** (`PostToolUse` / `Edit`): byte-compiles edited `.py` files to catch syntax errors immediately.
 - **`guard-push`** (`PreToolUse` / `Bash`): blocks `git push` to `main` (named explicitly, or when it's the current branch) by returning a `permissionDecision: deny`. Push from a feature branch instead.
+
+## Subagents and skills
+
+Subagents live in `.claude/agents/` — five of them: `code-reviewer`, `doc-writer`, `docstring-auditor`, `readme-refresher`, `test-author`. The last three declare `isolation: worktree` and touch non-overlapping paths (`src/`, `README.md`, `tests/`), so they can run in parallel without colliding.
+
+Skills live in `.claude/skills/` — `run-tests`, `style-check`, `tag-release`. `style-check` is `user-invocable: false` (Claude fires it automatically, no `/` command); `tag-release` is `disable-model-invocation: true` (only runs when the user types `/tag-release`).
+
+See the "Claude Code" section of `README.md` for the full breakdown, and `documentation/playbook/` for the developer guide.
 
 ## Data format
 

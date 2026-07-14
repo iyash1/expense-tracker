@@ -1,9 +1,8 @@
 # 04 — Extending Claude Code: Skills, Subagents, Hooks, MCP
 
 Out of the box Claude Code is powerful; these four mechanisms make it *yours*.
-This chapter is the practical overview — the companion document
-[`../Claude-Code-Advanced-Concepts.docx`](../Claude-Code-Advanced-Concepts.docx)
-goes deeper with worked examples.
+This chapter is the practical overview — the companion Part 2 guide, *Claude,
+Level Up: Going Deeper with Claude Code*, goes deeper with worked examples.
 
 | Mechanism | One-line definition | Reach for it when… |
 |---|---|---|

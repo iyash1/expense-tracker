@@ -36,10 +36,9 @@ Each chapter is short, opinionated, and ends with concrete actions.
 | 07 | [CI/CD & Automation](07-cicd-and-automation.md) | Claude in GitHub Actions; pre-commit + hook gates |
 | 08 | [Pitfalls & Tips](08-pitfalls-and-tips.md) | Common mistakes + one-page command/key cheat sheet |
 
-**Going deeper:** the companion
-[`../Claude-Code-Advanced-Concepts.docx`](../Claude-Code-Advanced-Concepts.docx)
-covers subagents, skills, hooks, GitHub Actions, and user-level customization
-with fully worked examples.
+**Going deeper:** the companion Part 2 guide — *Claude, Level Up: Going Deeper
+with Claude Code* — covers subagents, skills, hooks, GitHub Actions, and
+user-level customization with fully worked examples.
 
 ---
 
